@@ -2,7 +2,8 @@
 import { ref, onMounted } from 'vue'
 import axios from 'axios'
 
-const API = 'http://localhost:8080/api'
+// 开发模式直连后端，生产模式通过 nginx 代理
+const API = import.meta.env.DEV ? 'http://localhost:8080/api' : '/api'
 
 // 响应式数据
 const files = ref([])

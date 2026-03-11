@@ -1,0 +1,54 @@
+# 使用方式（Podman 和 Docker 命令完全一样）：
+#   启动所有服务：podman compose up -d
+#   停止所有服务：podman compose down
+#   查看日志：    podman compose logs -f
+#   重新构建：    podman compose up -d --build
+
+services:
+  # MongoDB 数据库
+  mongo:
+    image: docker.io/library/mongo:7
+    container_name: imagegroup-mongo
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo_data:/data/db
+    restart: unless-stopped
+
+  # Redis 缓存
+  redis:
+    image: docker.io/library/redis:7
+    container_name: imagegroup-redis
+    ports:
+      - "6379:6379"
+    restart: unless-stopped
+
+  # Go + Gin 后端
+  backend:
+    build: ./backend
+    container_name: imagegroup-backend
+    ports:
+      - "8080:8080"
+    environment:
+      - MONGO_URI=mongodb://mongo:27017
+      - REDIS_ADDR=redis:6379
+    depends_on:
+      - mongo
+      - redis
+    volumes:
+      - uploads_data:/app/uploads
+    restart: unless-stopped
+
+  # Vue 前端（通过 nginx 提供）
+  frontend:
+    build: ./frontend
+    container_name: imagegroup-frontend
+    ports:
+      - "3000:80"
+    depends_on:
+      - backend
+    restart: unless-stopped
+
+volumes:
+  mongo_data:
+  uploads_data:

@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"os"
 	"path/filepath"
 	"time"
 
@@ -16,6 +17,14 @@ import (
 	"go.mongodb.org/mongo-driver/v2/mongo"
 	"go.mongodb.org/mongo-driver/v2/mongo/options"
 )
+
+// getEnv 获取环境变量，不存在则返回默认值
+func getEnv(key, defaultValue string) string {
+	if value := os.Getenv(key); value != "" {
+		return value
+	}
+	return defaultValue
+}
 
 // FileRecord 文件上传记录
 type FileRecord struct {
@@ -73,7 +82,8 @@ func initMongoDB() {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
-	client, err := mongo.Connect(options.Client().ApplyURI("mongodb://localhost:27017"))
+	mongoURI := getEnv("MONGO_URI", "mongodb://localhost:27017")
+	client, err := mongo.Connect(options.Client().ApplyURI(mongoURI))
 	if err != nil {
 		log.Fatal("MongoDB 连接失败:", err)
 	}
@@ -90,8 +100,9 @@ func initMongoDB() {
 
 // 初始化 Redis 连接
 func initRedis() {
+	redisAddr := getEnv("REDIS_ADDR", "localhost:6379")
 	redisClient = redis.NewClient(&redis.Options{
-		Addr: "localhost:6379",
+		Addr: redisAddr,
 		DB:   0,
 	})
 
