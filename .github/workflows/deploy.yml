@@ -1,0 +1,75 @@
+# GitHub Actions 自动部署到阿里云服务器
+# 触发条件：push 到 main 分支
+# 流程：构建镜像 → 推送到 ghcr.io → SSH 到服务器拉取并重启
+
+name: Deploy to Server
+
+on:
+  push:
+    branches: [main]
+
+env:
+  REGISTRY: ghcr.io
+  BACKEND_IMAGE: ghcr.io/${{ github.repository }}/backend
+  FRONTEND_IMAGE: ghcr.io/${{ github.repository }}/frontend
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      # 1. 拉取代码
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      # 2. 登录 GitHub Container Registry
+      - name: Login to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      # 3. 构建并推送后端镜像
+      - name: Build and push backend
+        uses: docker/build-push-action@v5
+        with:
+          context: ./backend
+          push: true
+          tags: ${{ env.BACKEND_IMAGE }}:latest
+
+      # 4. 构建并推送前端镜像
+      - name: Build and push frontend
+        uses: docker/build-push-action@v5
+        with:
+          context: ./frontend
+          push: true
+          tags: ${{ env.FRONTEND_IMAGE }}:latest
+
+      # 5. SSH 到服务器，拉取新镜像并重启
+      - name: Deploy to server
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.SERVER_HOST }}
+          username: root
+          key: ${{ secrets.SERVER_SSH_KEY }}
+          script: |
+            cd /root/image-group
+
+            # 登录 ghcr.io
+            echo ${{ secrets.GHCR_TOKEN }} | podman login ghcr.io -u ${{ github.actor }} --password-stdin
+
+            # 拉取最新镜像
+            podman pull ${{ env.BACKEND_IMAGE }}:latest
+            podman pull ${{ env.FRONTEND_IMAGE }}:latest
+
+            # 停掉旧容器并用新镜像启动
+            podman compose down
+            podman compose up -d
+
+            # 清理旧镜像
+            podman image prune -f

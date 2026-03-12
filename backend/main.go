@@ -30,6 +30,7 @@ func getEnv(key, defaultValue string) string {
 type FileRecord struct {
 	ID         bson.ObjectID `json:"id" bson:"_id,omitempty"`
 	Filename   string        `json:"filename" bson:"filename"`
+	StoreName  string        `json:"store_name" bson:"store_name"`
 	Size       int64         `json:"size" bson:"size"`
 	UploadTime time.Time     `json:"upload_time" bson:"upload_time"`
 }
@@ -62,6 +63,7 @@ func main() {
 	{
 		api.POST("/upload", uploadFile)
 		api.GET("/files", getFiles)
+		api.GET("/download/:id", downloadFile)
 		api.DELETE("/files/:filename", deleteFile)
 		api.GET("/health", healthCheck)
 	}
@@ -143,6 +145,7 @@ func uploadFile(c *gin.Context) {
 	// 文件信息存入 MongoDB
 	record := FileRecord{
 		Filename:   file.Filename,
+		StoreName:  newFilename,
 		Size:       file.Size,
 		UploadTime: time.Now(),
 	}
@@ -224,12 +227,63 @@ func getFiles(c *gin.Context) {
 	c.JSON(http.StatusOK, response)
 }
 
-// 删除文件记录
+// 下载文件
+func downloadFile(c *gin.Context) {
+	id := c.Param("id")
+	ctx := context.Background()
+
+	// 把字符串 ID 转成 ObjectID
+	objectID, err := bson.ObjectIDFromHex(id)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"code":    1,
+			"message": "无效的文件ID",
+		})
+		return
+	}
+
+	// 从 MongoDB 查找文件记录
+	var record FileRecord
+	err = fileCollection.FindOne(ctx, bson.M{"_id": objectID}).Decode(&record)
+	if err != nil {
+		c.JSON(http.StatusNotFound, gin.H{
+			"code":    1,
+			"message": "文件不存在",
+		})
+		return
+	}
+
+	// 构建磁盘上的文件路径
+	filePath := filepath.Join("./uploads", record.StoreName)
+	if _, err := os.Stat(filePath); os.IsNotExist(err) {
+		c.JSON(http.StatusNotFound, gin.H{
+			"code":    1,
+			"message": "文件已丢失",
+		})
+		return
+	}
+
+	// 设置下载头，使用原始文件名
+	c.Header("Content-Disposition", fmt.Sprintf(`attachment; filename="%s"`, record.Filename))
+	c.File(filePath)
+}
+
+// 删除文件记录（同时删除磁盘文件）
 func deleteFile(c *gin.Context) {
 	filename := c.Param("filename")
 	ctx := context.Background()
 
-	_, err := fileCollection.DeleteOne(ctx, bson.M{"filename": filename})
+	// 先查找文件记录，获取磁盘文件名
+	var record FileRecord
+	err := fileCollection.FindOne(ctx, bson.M{"filename": filename}).Decode(&record)
+	if err == nil && record.StoreName != "" {
+		// 删除磁盘上的文件
+		filePath := filepath.Join("./uploads", record.StoreName)
+		os.Remove(filePath) // 忽略错误（文件可能已不存在）
+	}
+
+	// 删除数据库记录
+	_, err = fileCollection.DeleteOne(ctx, bson.M{"filename": filename})
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"code":    1,

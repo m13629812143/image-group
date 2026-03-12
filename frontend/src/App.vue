@@ -11,7 +11,7 @@ const selectedFile = ref(null)
 const uploading = ref(false)
 const message = ref('')
 const messageType = ref('')
-const health = ref(null)
+
 
 // 选择文件
 function onFileChange(e) {
@@ -61,6 +61,16 @@ async function fetchFiles() {
   }
 }
 
+// 下载文件
+function downloadFile(id, filename) {
+  const link = document.createElement('a')
+  link.href = `${API}/download/${id}`
+  link.download = filename
+  document.body.appendChild(link)
+  link.click()
+  document.body.removeChild(link)
+}
+
 // 删除文件
 async function deleteFile(filename) {
   if (!confirm(`确定要删除 "${filename}" 吗?`)) return
@@ -76,15 +86,7 @@ async function deleteFile(filename) {
   }
 }
 
-// 健康检查
-async function checkHealth() {
-  try {
-    const res = await axios.get(`${API}/health`)
-    health.value = res.data.data
-  } catch (err) {
-    health.value = { mongodb: '无法连接', redis: '无法连接' }
-  }
-}
+
 
 // 格式化文件大小
 function formatSize(bytes) {
@@ -108,31 +110,14 @@ function showMessage(msg, type) {
 // 页面加载时获取数据
 onMounted(() => {
   fetchFiles()
-  checkHealth()
 })
 </script>
 
 <template>
   <div class="app">
     <header class="header">
-      <h1>Image Group - 文件上传系统</h1>
-      <p class="subtitle">Vue + Gin + MongoDB + Redis</p>
+      <h1>文件管理系统</h1>
     </header>
-
-    <!-- 服务状态 -->
-    <div class="status-bar" v-if="health">
-      <span class="status-item">
-        <span :class="health.mongodb === '正常' ? 'dot green' : 'dot red'"></span>
-        MongoDB: {{ health.mongodb }}
-      </span>
-      <span class="status-item">
-        <span :class="health.redis === '正常' ? 'dot green' : 'dot red'"></span>
-        Redis: {{ health.redis }}
-      </span>
-      <span class="status-item" v-if="health.upload_count">
-        总上传次数: {{ health.upload_count }}
-      </span>
-    </div>
 
     <!-- 消息提示 -->
     <div v-if="message" :class="['message', messageType]">
@@ -172,6 +157,7 @@ onMounted(() => {
             <td>{{ formatSize(file.size) }}</td>
             <td>{{ formatTime(file.upload_time) }}</td>
             <td>
+              <button @click="downloadFile(file.id, file.filename)" class="btn btn-download">下载</button>
               <button @click="deleteFile(file.filename)" class="btn btn-delete">删除</button>
             </td>
           </tr>
@@ -209,41 +195,6 @@ body {
   font-size: 28px;
   color: #2c3e50;
 }
-
-.subtitle {
-  color: #7f8c8d;
-  margin-top: 8px;
-  font-size: 14px;
-}
-
-/* 服务状态栏 */
-.status-bar {
-  display: flex;
-  gap: 20px;
-  justify-content: center;
-  padding: 12px;
-  background: #fff;
-  border-radius: 8px;
-  margin-bottom: 20px;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-  font-size: 14px;
-}
-
-.status-item {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-}
-
-.dot {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  display: inline-block;
-}
-
-.dot.green { background: #27ae60; }
-.dot.red { background: #e74c3c; }
 
 /* 消息提示 */
 .message {
@@ -315,6 +266,18 @@ body {
 
 .btn-upload:hover:not(:disabled) {
   background: #2980b9;
+}
+
+.btn-download {
+  background: #27ae60;
+  color: #fff;
+  padding: 4px 12px;
+  font-size: 12px;
+  margin-right: 6px;
+}
+
+.btn-download:hover {
+  background: #219a52;
 }
 
 .btn-delete {

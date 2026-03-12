@@ -1,0 +1,51 @@
+# 生产环境 docker-compose（服务器上使用）
+# 镜像来自 GitHub Container Registry，由 GitHub Actions 自动构建推送
+
+services:
+  # MongoDB 数据库
+  mongo:
+    image: docker.io/library/mongo:7
+    container_name: imagegroup-mongo
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo_data:/data/db
+    restart: unless-stopped
+
+  # Redis 缓存
+  redis:
+    image: docker.io/library/redis:7
+    container_name: imagegroup-redis
+    ports:
+      - "6379:6379"
+    restart: unless-stopped
+
+  # Go + Gin 后端（从 ghcr.io 拉取）
+  backend:
+    image: ghcr.io/m13629812143/image-group/backend:latest
+    container_name: imagegroup-backend
+    ports:
+      - "8080:8080"
+    environment:
+      - MONGO_URI=mongodb://mongo:27017
+      - REDIS_ADDR=redis:6379
+    depends_on:
+      - mongo
+      - redis
+    volumes:
+      - uploads_data:/app/uploads
+    restart: unless-stopped
+
+  # Vue 前端（从 ghcr.io 拉取）
+  frontend:
+    image: ghcr.io/m13629812143/image-group/frontend:latest
+    container_name: imagegroup-frontend
+    ports:
+      - "80:80"
+    depends_on:
+      - backend
+    restart: unless-stopped
+
+volumes:
+  mongo_data:
+  uploads_data:

@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+  <!-- Apple body -->
+  <path d="M50 20C30 20 15 38 15 58C15 78 30 95 50 95C70 95 85 78 85 58C85 38 70 20 50 20Z" fill="#e74c3c"/>
+  <!-- Apple highlight -->
+  <path d="M38 30C28 35 22 48 22 58C22 62 23 66 25 70" fill="none" stroke="#ff6b6b" stroke-width="3" stroke-linecap="round"/>
+  <!-- Stem -->
+  <path d="M50 20C50 20 52 8 58 5" fill="none" stroke="#795548" stroke-width="3" stroke-linecap="round"/>
+  <!-- Leaf -->
+  <path d="M55 12C60 8 68 8 70 12C68 16 60 16 55 12Z" fill="#27ae60"/>
+</svg>
