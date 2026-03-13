@@ -11,7 +11,8 @@ const admin = computed(() => isAdmin())
 
 function handleLogout() {
   logout()
-  router.push('/login')
+  // 全页面刷新，确保导航栏状态完全更新
+  window.location.href = '/login'
 }
 </script>
 

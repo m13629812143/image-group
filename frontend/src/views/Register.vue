@@ -41,7 +41,8 @@ async function handleRegister() {
     if (res.data.code === 0) {
       message.value = '注册成功，即将跳转到登录页...'
       messageType.value = 'success'
-      setTimeout(() => router.push('/login'), 1500)
+      // 全页面刷新跳转到登录页
+      setTimeout(() => window.location.href = '/login', 1500)
     } else {
       message.value = res.data.message
       messageType.value = 'error'
