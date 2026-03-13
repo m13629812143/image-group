@@ -53,8 +53,8 @@ async function deleteUser(id, username) {
     const res = await http.delete(`/admin/users/${id}`)
     if (res.data.code === 0) {
       showMessage('用户已删除', 'success')
-      fetchUsers()
-      fetchStats()
+      // 全页面刷新，确保数据完全更新
+      setTimeout(() => window.location.reload(), 500)
     }
   } catch (err) {
     showMessage(err.response?.data?.message || '删除失败', 'error')
@@ -69,8 +69,8 @@ async function deleteFile(id, filename) {
     const res = await http.delete(`/admin/files/${id}`)
     if (res.data.code === 0) {
       showMessage('文件已删除', 'success')
-      fetchFiles()
-      fetchStats()
+      // 全页面刷新，确保数据完全更新
+      setTimeout(() => window.location.reload(), 500)
     }
   } catch (err) {
     showMessage(err.response?.data?.message || '删除失败', 'error')

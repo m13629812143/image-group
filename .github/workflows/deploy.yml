@@ -68,8 +68,8 @@ jobs:
             podman pull ${{ env.FRONTEND_IMAGE }}:latest
 
             # 停掉旧容器并用新镜像启动
-            podman compose down
-            podman compose up -d
+            podman-compose down
+            podman-compose up -d
 
             # 清理旧镜像
             podman image prune -f

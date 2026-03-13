@@ -44,7 +44,8 @@ async function upload() {
       showMessage(`上传成功: ${res.data.data.filename}`, 'success')
       selectedFile.value = null
       document.getElementById('fileInput').value = ''
-      fetchFiles()
+      // 全页面刷新，确保文件列表完全更新
+      setTimeout(() => window.location.reload(), 500)
     } else {
       showMessage(res.data.message, 'error')
     }
@@ -85,7 +86,8 @@ async function deleteFile(id, filename) {
     const res = await http.delete(`/files/${id}`)
     if (res.data.code === 0) {
       showMessage('删除成功', 'success')
-      fetchFiles()
+      // 全页面刷新，确保文件列表完全更新
+      setTimeout(() => window.location.reload(), 500)
     }
   } catch (err) {
     showMessage(err.response?.data?.message || '删除失败', 'error')

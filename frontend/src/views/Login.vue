@@ -25,7 +25,8 @@ async function handleLogin() {
     })
     if (res.data.code === 0) {
       saveLogin(res.data.data.token, res.data.data.username, res.data.data.role)
-      router.push('/files')
+      // 全页面刷新，确保导航栏等状态完全更新
+      window.location.href = '/files'
     } else {
       message.value = res.data.message
     }
